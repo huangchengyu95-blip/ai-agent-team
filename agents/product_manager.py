@@ -16,6 +16,48 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.llm_client import LLMClient
 from utils.feishu_client import FeishuClient
 from utils.status_tracker import update_agent_status, log_activity, increment_stat, update_feishu_links
+from utils.web_tools import format_rss_sources, fetch_hn_posts
+
+
+# ============================================================
+# 产品经理专用优质信息源（偏向产品策略、用户洞察、技术前沿、投资视角）
+# ============================================================
+
+CURATED_RSS_SOURCES = {
+    # === AI产品经理必读Newsletter ===
+    "Marily's AI Product（Google AI产品总监，产品策略必读）": "https://marily.substack.com/feed",
+    "One Useful Thing（Wharton教授，AI对产品/工作影响）": "https://www.oneusefulthing.org/feed",
+    "Every（AI时代的产品与商业深度分析）": "https://every.to/feed",
+    "Creator Economy by Peter Yang（AI产品经理必读）": "https://creatoreconomy.so/feed",
+    "The Algorithmic Bridge（AI与普通用户的桥梁视角）": "https://thealgorithmicbridge.substack.com/feed",
+
+    # === 研究员/工程师深度思考 ===
+    "Ahead of AI by Sebastian Raschka（LLM研究深度解读）": "https://magazine.sebastianraschka.com/feed",
+    "Lil'Log by Lilian Weng（Anthropic研究员，技术洞察）": "https://lilianweng.github.io/index.xml",
+    "karpathy Blog（AI领域最有影响力的工程师博客）": "https://karpathy.github.io/feed.xml",
+    "Simon Willison's Weblog（AI工具实践，高产量）": "https://simonwillison.net/atom/everything/",
+    "Interconnects（AI研究前沿对产品的影响）": "https://www.interconnects.ai/feed",
+
+    # === 投资/创业视角 ===
+    "a16z Future（顶级VC对AI产品趋势的判断）": "https://future.com/feed",
+    "Ben's Bites（AI行业产品动态精华）": "https://bensbites.beehiiv.com/feed",
+
+    # === 创业/产品播客（YouTube RSS） ===
+    "Lenny's Podcast（顶级产品经理访谈）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL",
+    "Lightcone Podcast - YC（创业与产品战略）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLQ-uHSnFig5Ob4XXhgSK26Smb4oRhzFmK",
+    "Dwarkesh Podcast（深度访谈AI领袖，战略思考）":
+        "https://www.dwarkeshpatel.com/feed",
+    "Latent Space Podcast（AI应用层产品机会）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLWEAb1SXhjlfkEF_PxzYHonU_v5LPMI8L",
+}
+
+# Hacker News Ask HN — 最能反映用户真实需求的地方
+HN_CATEGORIES_PM = [
+    "askstories",   # Ask HN：用户提问和讨论，能发现真实需求痛点
+    "showstories",  # Show HN：新产品展示，发现竞品和灵感
+]
 
 
 # ============================================================
@@ -125,39 +167,61 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
             else:
                 print("   文档为空或读取失败，将从头开始建立认知")
 
-        # 构建给Agent的提示
+        # 预先读取所有信息源（不消耗LLM工具调用次数）
         now = datetime.now()
+
+        print("\n📡 读取产品策略RSS信息源...")
+        rss_content = format_rss_sources(CURATED_RSS_SOURCES, max_items_per_source=3)
+
+        print("📡 读取 Hacker News Ask/Show HN...")
+        hn_content = "\n".join([fetch_hn_posts(cat, max_items=8) for cat in HN_CATEGORIES_PM])
+
+        print("   信息源读取完成")
+
+        # 构建给Agent的提示
         user_prompt = f"""
 当前时间：{now.strftime('%Y年%m月%d日 %H:%M')}
 
-**最新AI动态追踪信息（来自动态追踪员）：**
-{trend_content if trend_content else "（本次无新的动态追踪内容，请主动搜索）"}
+==============================
+【来自动态追踪员的最新动态】
+==============================
+{trend_content if trend_content else "（本次无新的动态追踪内容）"}
 
-**你当前的认知沉淀文档：**
+==============================
+【来自优质信息源的最新内容】
+（Newsletter + 研究员博客 + 投资人思考 + 产品播客）
+==============================
+{rss_content}
+
+==============================
+【Hacker News 技术社区真实声音】
+（Ask HN用户提问 + Show HN新产品展示）
+==============================
+{hn_content}
+
+==============================
+【你当前的认知沉淀文档】
+==============================
 {current_knowledge[:3000] if current_knowledge else "（文档为空，需要从头建立）"}
 
 ---
 
 请按以下步骤工作：
 
-**第一步：消化新动态**
-分析上面的动态追踪内容，思考哪些信息对你的认知有更新。
+**第一步：消化信息**
+综合分析上面的全部内容，找出与AI社交方向最相关的洞察。
+重点关注：HN Ask里用户在问什么需求？HN Show里有什么新AI社交产品？研究员/投资人在关注什么趋势？
 
 **第二步：主动深入研究**
-根据你的判断，对最感兴趣的1-2个话题进行深入搜索研究。
-例如：
-- 如果看到某个AI社交产品有新进展，搜索它的用户评价和数据
-- 如果发现某个用户需求被多次提及，搜索相关研究和案例
-- 如果有你一直想了解的话题，主动去搜
+对感兴趣的话题，用 web_search 和 web_fetch 工具深入研究：
+- 播客/博客标题看起来有价值？用web_fetch读原文
+- 某个AI社交产品有新进展？搜用户真实评价
+- HN或Newsletter里提到某个趋势？搜更多佐证材料
 
 **第三步：更新认知框架**
-基于新信息和你的思考，决定：
-- 认知沉淀文档的哪些部分需要补充或修正？
-- 有没有新的维度需要加入框架？
-- 写出要追加的新内容（Markdown格式）
+基于新信息，写出要追加到认知沉淀文档的内容（Markdown格式）。
 
 **第四步：判断产品机会**
-思考：基于最新的信息和你对行业的理解，有没有发现值得深入探索的产品机会？
 评估标准：用户痛点真实 + 现有解决不好 + 技术可行 + 时机合适
 
 按JSON格式输出结果。

@@ -17,6 +17,60 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.llm_client import LLMClient
 from utils.feishu_client import FeishuClient
 from utils.status_tracker import update_agent_status, log_activity, update_feishu_links
+from utils.web_tools import format_rss_sources, fetch_hn_posts, fetch_reddit_posts
+
+
+# ============================================================
+# 优质信息源（RSS订阅，无需任何API Key）
+# ============================================================
+
+CURATED_RSS_SOURCES = {
+    # === 头部AI公司官方博客 ===
+    "OpenAI官方博客（产品发布与研究公告）": "https://openai.com/news/rss.xml",
+    "Hugging Face博客（开源AI模型与工具）": "https://huggingface.co/blog/feed.xml",
+    "Google官方博客（Google AI产品公告）": "https://blog.google/rss/",
+
+    # === AI行业Newsletter ===
+    "Ben's Bites（AI行业每日新闻精华）": "https://bensbites.beehiiv.com/feed",
+    "AINews by smol.ai（AI研究与工程动态）": "https://buttondown.com/ainews/rss",
+    "TheSequence（AI技术与产业深度分析）": "https://thesequence.substack.com/feed",
+    "The Algorithmic Bridge（AI与社会的深度思考）": "https://thealgorithmicbridge.substack.com/feed",
+    "Interconnects（AI研究前沿，Nathan Lambert）": "https://www.interconnects.ai/feed",
+    "Epoch AI（AI能力进展追踪）": "https://epochai.substack.com/feed",
+    "Every（AI产品与商业深度分析）": "https://every.to/feed",
+
+    # === 研究员/工程师博客 ===
+    "Simon Willison's Weblog（AI工具与应用实践）": "https://simonwillison.net/atom/everything/",
+
+    # === 产品发现 ===
+    "Product Hunt（每日新上线AI产品）": "https://www.producthunt.com/feed",
+
+    # === AI播客（YouTube RSS） ===
+    "The AI Daily Brief（AI每日要闻播客）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLRYSuzHGhXPmKnOpd-f588cNNmTe2S9FP",
+    "Latent Space Podcast（AI工程师/创业者视角）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLWEAb1SXhjlfkEF_PxzYHonU_v5LPMI8L",
+    "Training Data - Anthropic官方播客":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8",
+    "No Priors Podcast（投资人视角的AI趋势）":
+        "https://www.youtube.com/feeds/videos.xml?playlist_id=PLmYVYFmFwGm3txxUduawn7i53C5rDjjd7",
+    "Dwarkesh Podcast（深度访谈AI领袖）":
+        "https://www.dwarkeshpatel.com/feed",
+}
+
+# Hacker News 关注的板块（技术社区真实讨论）
+HN_CATEGORIES = [
+    "topstories",   # 综合热门
+    "showstories",  # Show HN：新工具/项目展示，最容易发现AI创业新项目
+]
+
+# Reddit 关注的AI社交相关版块（用户真实反馈第一手来源）
+REDDIT_SUBREDDITS = [
+    "artificial",       # AI综合讨论
+    "ChatGPT",          # ChatGPT用户真实反馈
+    "singularity",      # AI未来趋势讨论
+    "MachineLearning",  # 研究者社区
+]
 
 
 # ============================================================
@@ -85,27 +139,52 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
         # 获取飞书文档ID
         trend_doc_id = config.get("feishu", {}).get("documents", {}).get("trend_doc_id", "")
 
-        # 构建搜索提示（告诉Agent要搜索什么）
+        # 预先读取所有信息源（直接拉取，不消耗LLM工具调用次数）
         now = datetime.now()
+
+        print("\n📡 读取RSS信息源...")
+        rss_content = format_rss_sources(CURATED_RSS_SOURCES, max_items_per_source=3)
+
+        print("📡 读取Hacker News...")
+        hn_content = "\n".join([fetch_hn_posts(cat, max_items=8) for cat in HN_CATEGORIES])
+
+        print("📡 读取Reddit...")
+        reddit_content = fetch_reddit_posts(REDDIT_SUBREDDITS, max_items_per_sub=5)
+
+        print("   全部信息源读取完成")
+
+        # 构建给Agent的提示，包含已抓取的信息源内容
         user_prompt = f"""
 当前时间：{now.strftime('%Y年%m月%d日 %H:%M')}
 
-请搜索过去4-8小时内AI社交方向的最新动态。
+==============================
+【RSS信息源（Newsletter + 官方博客 + 播客）】
+==============================
+{rss_content}
 
-搜索策略（按优先级）：
-1. 搜索 "AI companion app 2025 latest" 、"AI social product news" 等英文关键词
-2. 搜索 "Character AI Replika 2025 update user feedback"
-3. 搜索 "AI chat application reddit discussion" 了解用户真实反馈
-4. 搜索 "Product Hunt AI social" 发现新产品
-5. 搜索 "OpenAI ChatGPT social feature" 、"AI relationship app" 等
+==============================
+【Hacker News 技术社区讨论】
+==============================
+{hn_content}
 
-对每条找到的信息：
-- 判断它是否与AI社交产品方向相关
-- 判断它是否有产品决策价值
-- 只保留重要的信息
+==============================
+【Reddit 用户真实讨论】
+==============================
+{reddit_content}
 
-最后按要求的JSON格式输出结果。
-如果某个搜索结果值得深入阅读，可以用web_fetch工具获取全文。
+==============================
+【你的工作任务】
+==============================
+
+上面已自动抓取了三类信息源：RSS博客/Newsletter、Hacker News技术社区、Reddit用户讨论。
+请重点分析其中与AI社交方向相关的内容。
+
+此外，请用 web_search 工具补充搜索以下方向（优先搜索上面没有覆盖到的内容）：
+1. "AI companion app 2025" 、"AI social product news" — 最新AI社交产品动态
+2. "Character AI Replika 2025 update" — 头部AI社交产品的最新动态
+3. 对上面任何引发兴趣的话题，用 web_fetch 深入阅读原文
+
+请综合以上全部内容，筛选出对AI社交产品经理有价值的信息，按JSON格式输出。
 """
 
         # 运行Agent
