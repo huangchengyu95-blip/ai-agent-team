@@ -62,6 +62,10 @@ def run_pipeline(dry_run: bool = False, only_agent: str = None):
     if dry_run:
         return _run_dry_run(feishu, config)
 
+    # 首次运行时自动创建产品方案文件夹（若尚未配置）
+    if feishu.is_configured():
+        _ensure_ideas_folder(feishu, config)
+
     # ============================================================
     # 流水线执行
     # ============================================================
@@ -267,6 +271,46 @@ def _print_summary(results: dict, start_time: datetime):
     print("="*60)
 
 
+def _ensure_ideas_folder(feishu: FeishuClient, config: dict):
+    """
+    确保产品方案文件夹已创建并配置。
+    若 config.json 中的 ideas_folder_token 为空，则自动创建飞书文件夹，
+    并将 token 保存回 config.json（下次运行时直接使用）。
+    """
+    from utils.status_tracker import update_feishu_links
+
+    folder_token = config.get("feishu", {}).get("documents", {}).get("ideas_folder_token", "")
+    if folder_token:
+        return  # 已配置，无需重复创建
+
+    print("\n📁 产品方案文件夹尚未创建，正在自动创建...")
+    token = feishu.create_folder("产品方案")
+    if not token:
+        print("   ⚠️  文件夹创建失败，将把产品方案文档存放在云盘根目录")
+        return
+
+    print(f"   ✅ 产品方案文件夹创建成功，token={token}")
+
+    # 把 token 写回 config.json，供后续运行使用
+    config_path = os.path.join(os.path.dirname(__file__), "config.json")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        raw["feishu"]["documents"]["ideas_folder_token"] = token
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(raw, f, ensure_ascii=False, indent=2)
+        config["feishu"]["documents"]["ideas_folder_token"] = token
+        print("   ✅ 已将文件夹 token 保存到 config.json")
+    except Exception as e:
+        print(f"   ⚠️  保存 config.json 失败：{e}")
+
+    # 更新看板中的文件夹链接（飞书文件夹 URL 格式）
+    doc_domain = config.get("feishu", {}).get("feishu_doc_domain", "docs.feishu.cn")
+    folder_url = f"https://{doc_domain}/drive/folder/{token}"
+    update_feishu_links(ideas_folder=folder_url)
+    print(f"   ✅ 看板文件夹链接已更新：{folder_url}")
+
+
 def _commit_status_update():
     """
     在GitHub Actions中，自动提交status.json到仓库
@@ -280,11 +324,13 @@ def _commit_status_update():
         import subprocess
         subprocess.run(["git", "config", "user.email", "agent@ai-team.bot"], check=True)
         subprocess.run(["git", "config", "user.name", "AI Agent Team"], check=True)
-        subprocess.run(["git", "add", "status.json"], check=True)
+        # 同时提交 status.json 和 config.json（创建新文件夹时 config.json 也会更新）
+        subprocess.run(["git", "add", "status.json", "config.json"], check=True)
         # 检查是否有变化再提交
         result = subprocess.run(["git", "diff", "--cached", "--quiet"])
         if result.returncode != 0:  # 有变化
             subprocess.run(["git", "commit", "-m", f"chore: update agent status [{datetime.now().strftime('%Y-%m-%d %H:%M')}]"], check=True)
+            subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=True)
             subprocess.run(["git", "push"], check=True)
             print("✅ 状态已推送到GitHub Pages")
     except Exception as e:
