@@ -1,0 +1,55 @@
+{
+  "_说明": "这个文件记录所有Agent的运行状态，由程序自动维护，不需要手动修改",
+  "last_updated": "",
+  "system_status": "initializing",
+
+  "agents": {
+    "trend_tracker": {
+      "name": "AI动态追踪员",
+      "status": "waiting",
+      "last_run": "",
+      "last_result": "系统初始化中，尚未运行",
+      "next_run": "",
+      "runs_today": 0,
+      "total_runs": 0
+    },
+    "product_manager": {
+      "name": "产品经理",
+      "status": "waiting",
+      "last_run": "",
+      "last_result": "等待动态追踪员完成",
+      "pending_ideas": 0,
+      "total_ideas": 0
+    },
+    "product_reviewer": {
+      "name": "产品评审员",
+      "status": "waiting",
+      "waiting_for": "product_idea",
+      "last_run": "",
+      "last_result": "等待产品经理提交创意",
+      "pending_review": null
+    },
+    "engineer": {
+      "name": "工程师",
+      "status": "waiting",
+      "waiting_for": "user_approval",
+      "last_run": "",
+      "last_result": "等待用户批准产品方案",
+      "demos_built": 0
+    }
+  },
+
+  "activity_log": [],
+
+  "feishu_links": {
+    "trend_doc": "https://bytedance.larkoffice.com/docx/G1nad89GBoI5MhxSCkicdB64nNc",
+    "knowledge_doc": "https://bytedance.larkoffice.com/docx/Pjr4dJIoZowMuHxJPwGc7ZlJnHc",
+    "ideas_folder": ""
+  },
+
+  "stats": {
+    "total_pipeline_runs": 0,
+    "total_ideas_generated": 0,
+    "total_demos_built": 0
+  }
+}

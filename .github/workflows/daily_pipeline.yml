@@ -1,0 +1,110 @@
+# GitHub Actions 工作流：每4小时自动运行 Agent 1 + Agent 2 + Agent 3
+# 这个文件告诉GitHub：在什么时间、用什么方式运行我们的Python代码
+
+name: AI Agent Team - 每4小时自动运行
+
+on:
+  # 定时运行：每4小时运行一次
+  # cron格式说明：分 时 日 月 星期
+  # "0 */4 * * *" 表示：每4小时整点运行
+  # 注意：GitHub Actions使用UTC时间
+  # UTC 0点 = 北京时间8点
+  # UTC 4点 = 北京时间12点
+  # UTC 8点 = 北京时间16点
+  # UTC 12点 = 北京时间20点
+  # UTC 16点 = 北京时间0点
+  # UTC 20点 = 北京时间4点
+  schedule:
+    - cron: '0 */4 * * *'
+
+  # 允许手动触发（方便测试）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '是否是测试模式（true=不调用LLM，只测试飞书连接）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      only_agent:
+        description: '只运行某个Agent（留空=运行全部）'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - 'trend'
+          - 'pm'
+
+jobs:
+  run-agents:
+    # 使用最新版Ubuntu系统运行
+    runs-on: ubuntu-latest
+
+    # 设置权限：需要写入仓库（用于更新status.json）
+    permissions:
+      contents: write
+
+    steps:
+      # 第1步：下载仓库代码
+      - name: 下载代码
+        uses: actions/checkout@v4
+        with:
+          # 使用写权限的token，这样后面才能推送status.json的更新
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 第2步：安装Python环境
+      - name: 安装Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'  # 缓存pip安装的包，加快后续运行速度
+
+      # 第3步：安装依赖包
+      - name: 安装Python依赖
+        run: |
+          pip install -r requirements.txt
+
+      # 第4步：运行AI Agent Team
+      - name: 运行AI Agent Team流水线
+        env:
+          # 从GitHub Secrets读取密钥（密钥在仓库Settings → Secrets中配置）
+          # 注意：飞书文档ID和用户Open ID已经写在config.json里，不需要在Secrets中配置
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          VOLCENGINE_API_KEY: ${{ secrets.VOLCENGINE_API_KEY }}
+          VOLCENGINE_MODEL_ID: ${{ secrets.VOLCENGINE_MODEL_ID }}
+        run: |
+          # 根据手动触发时的参数决定运行方式
+          DRY_RUN="${{ github.event.inputs.dry_run }}"
+          ONLY_AGENT="${{ github.event.inputs.only_agent }}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "运行测试模式..."
+            python main.py --dry-run
+          elif [ -n "$ONLY_AGENT" ]; then
+            echo "只运行Agent: $ONLY_AGENT"
+            python main.py --agent "$ONLY_AGENT"
+          else
+            echo "运行完整流水线..."
+            python main.py
+          fi
+
+      # 第5步：推送更新的status.json到仓库（让GitHub Pages看板能显示最新状态）
+      - name: 更新状态文件到仓库
+        run: |
+          git config user.email "agent@ai-team.bot"
+          git config user.name "AI Agent Team"
+          git add status.json
+          # 只有status.json真的有变化才提交，避免空提交
+          git diff --cached --quiet || git commit -m "chore: update agent status [$(date '+%Y-%m-%d %H:%M')]"
+          git push || echo "推送失败（可能没有变化），继续执行"
+
+      # 如果工程师构建了Demo，也需要提交到仓库
+      - name: 提交新Demo到仓库（如有）
+        run: |
+          git add demos/ || true
+          git diff --cached --quiet || git commit -m "feat: add new demo [$(date '+%Y-%m-%d %H:%M')]"
+          git push || echo "没有新Demo，继续执行"

@@ -1,0 +1,18 @@
+# Python依赖包列表
+# 安装方法：pip install -r requirements.txt
+
+# 火山引擎LLM调用（兼容OpenAI格式）
+openai>=1.0.0
+
+# 网页内容解析
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# 网络搜索（免费，无需API Key）
+duckduckgo-search>=6.0.0
+
+# 环境变量管理（本地测试用）
+python-dotenv>=1.0.0
+
+# HTML解析辅助
+lxml>=5.0.0

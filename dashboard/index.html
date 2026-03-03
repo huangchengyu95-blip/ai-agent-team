@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Team 工作看板</title>
+    <style>
+        /* ========== 基础样式重置 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ========== 颜色变量 ========== */
+        :root {
+            --bg: #0f1117;
+            --bg-card: #1a1d27;
+            --bg-card-hover: #1f2335;
+            --border: #2a2d3e;
+            --text-primary: #e2e8f0;
+            --text-secondary: #8892a4;
+            --text-muted: #4a5568;
+            --accent-blue: #4f9cf9;
+            --accent-green: #48bb78;
+            --accent-yellow: #f6c90e;
+            --accent-red: #fc8181;
+            --accent-purple: #9f7aea;
+            --accent-orange: #f6ad55;
+        }
+
+        /* ========== 页面整体布局 ========== */
+        body {
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        /* ========== 顶部标题栏 ========== */
+        .header {
+            text-align: center;
+            padding: 24px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .header .subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .last-updated {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* ========== Agent状态卡片区域 ========== */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .agents-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* 单个Agent卡片 */
+        .agent-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .agent-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 12px 12px 0 0;
+            opacity: 0.7;
+        }
+
+        .agent-card.status-running::before { background: var(--accent-yellow); }
+        .agent-card.status-idle::before { background: var(--accent-green); }
+        .agent-card.status-waiting::before { background: var(--text-muted); }
+        .agent-card.status-error::before { background: var(--accent-red); }
+
+        .agent-emoji {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .agent-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .status-badge.running {
+            background: rgba(246, 201, 14, 0.15);
+            color: var(--accent-yellow);
+            border: 1px solid rgba(246, 201, 14, 0.3);
+        }
+
+        .status-badge.idle {
+            background: rgba(72, 187, 120, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .status-badge.waiting {
+            background: rgba(74, 85, 104, 0.3);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .status-badge.error {
+            background: rgba(252, 129, 129, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(252, 129, 129, 0.3);
+        }
+
+        /* 运行中的闪烁动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-badge.running .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-yellow);
+            animation: pulse 1.5s infinite;
+        }
+
+        .agent-result {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            /* 限制文字行数 */
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .agent-time {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ========== 统计数字区域 ========== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* ========== 最新活动日志 ========== */
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .activity-log {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .log-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-agent-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .log-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .log-message {
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .log-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .log-empty {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ========== 飞书文档快捷入口 ========== */
+        .quick-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .quick-link {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-card-hover);
+        }
+
+        .quick-link .link-icon {
+            font-size: 20px;
+        }
+
+        .quick-link .link-info {
+            flex: 1;
+        }
+
+        .quick-link .link-title {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .quick-link .link-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+
+        .quick-link .link-arrow {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .quick-link.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-link.disabled:hover {
+            border-color: var(--border);
+        }
+
+        /* ========== 加载状态 ========== */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        /* ========== 错误状态 ========== */
+        .error-box {
+            background: rgba(252, 129, 129, 0.1);
+            border: 1px solid rgba(252, 129, 129, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            color: var(--accent-red);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* ========== 底部说明 ========== */
+        .footer {
+            text-align: center;
+            padding: 16px 0 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部标题 -->
+    <div class="header">
+        <h1>🤖 AI Agent Team 工作看板</h1>
+        <div class="subtitle">
+            <span class="last-updated" id="lastUpdated">加载中...</span>
+            <button class="refresh-btn" onclick="loadStatus()">↻ 刷新</button>
+        </div>
+    </div>
+
+    <!-- 主内容区（加载完成后显示） -->
+    <div id="mainContent">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            正在加载最新状态...
+        </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        每30秒自动刷新 · 由 AI Agent Team 自动维护
+    </div>
+
+<script>
+    // ========== 配置 ==========
+    // status.json的路径（相对路径，和index.html在同目录下或者上一级）
+    const STATUS_URL = '../status.json';
+    // 自动刷新间隔（毫秒）
+    const REFRESH_INTERVAL = 30000; // 30秒
+
+    // ========== Agent配置（图标和颜色） ==========
+    const AGENT_CONFIG = {
+        trend_tracker: { emoji: '🔍', label: '动态追踪员', color: 'blue' },
+        product_manager: { emoji: '💡', label: '产品经理', color: 'purple' },
+        product_reviewer: { emoji: '🔬', label: '产品评审员', color: 'orange' },
+        engineer: { emoji: '🔧', label: '工程师', color: 'green' }
+    };
+
+    // ========== 状态文字 ==========
+    const STATUS_TEXT = {
+        running: '运行中',
+        idle: '空闲',
+        waiting: '等待中',
+        error: '出错'
+    };
+
+    // ========== 主渲染函数 ==========
+    async function loadStatus() {
+        try {
+            // 先尝试从上级目录加载（GitHub Pages路径）
+            let statusData = null;
+            const paths = ['../status.json', './status.json', 'status.json'];
+
+            for (const path of paths) {
+                try {
+                    const response = await fetch(path + '?t=' + Date.now()); // 加时间戳避免缓存
+                    if (response.ok) {
+                        statusData = await response.json();
+                        break;
+                    }
+                } catch(e) {
+                    continue;
+                }
+            }
+
+            if (!statusData) {
+                throw new Error('无法加载status.json文件');
+            }
+
+            renderDashboard(statusData);
+
+        } catch (error) {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="error-box">
+                    ⚠️ 加载状态数据失败<br>
+                    <small style="margin-top:8px;display:block;opacity:0.8">
+                        ${error.message}<br>
+                        请确认 status.json 文件存在，并且服务器允许跨域访问
+                    </small>
+                </div>
+            `;
+        }
+    }
+
+    // ========== 渲染完整看板 ==========
+    function renderDashboard(data) {
+        // 更新顶部时间
+        const lastUpdated = data.last_updated
+            ? formatTime(data.last_updated)
+            : '从未更新';
+        document.getElementById('lastUpdated').textContent = '最后更新：' + lastUpdated;
+
+        // 构建HTML
+        const html = `
+            <!-- Agent状态卡片 -->
+            <div class="agents-grid">
+                ${renderAgentCards(data.agents || {})}
+            </div>
+
+            <!-- 统计数字 -->
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-number">${data.stats?.total_pipeline_runs || 0}</div>
+                    <div class="stat-label">总运行次数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.stats?.total_ideas_generated || 0}</div>
+                    <div class="stat-label">产品创意</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.stats?.total_demos_built || 0}</div>
+                    <div class="stat-label">Demo数量</div>
+                </div>
+            </div>
+
+            <!-- 活动日志 -->
+            <div class="section-title">
+                📋 最新动态
+            </div>
+            <div class="activity-log">
+                ${renderActivityLog(data.activity_log || [])}
+            </div>
+
+            <!-- 飞书文档快捷入口 -->
+            <div class="section-title">
+                🔗 飞书文档快捷入口
+            </div>
+            <div class="quick-links">
+                ${renderQuickLinks(data.feishu_links || {})}
+            </div>
+        `;
+
+        document.getElementById('mainContent').innerHTML = html;
+    }
+
+    // ========== 渲染Agent卡片 ==========
+    function renderAgentCards(agents) {
+        const order = ['trend_tracker', 'product_manager', 'product_reviewer', 'engineer'];
+        return order.map(key => {
+            const agent = agents[key] || {};
+            const config = AGENT_CONFIG[key] || { emoji: '🤖', label: key };
+            const status = agent.status || 'waiting';
+            const statusText = STATUS_TEXT[status] || status;
+
+            const dotHtml = status === 'running' ? '<span class="dot"></span>' : '';
+
+            return `
+                <div class="agent-card status-${status}">
+                    <span class="agent-emoji">${config.emoji}</span>
+                    <div class="agent-name">${agent.name || config.label}</div>
+                    <span class="status-badge ${status}">
+                        ${dotHtml}${statusText}
+                    </span>
+                    <div class="agent-result">${agent.last_result || '尚未运行'}</div>
+                    ${agent.last_run ? `<div class="agent-time">上次：${formatTime(agent.last_run)}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========== 渲染活动日志 ==========
+    function renderActivityLog(logs) {
+        if (!logs || logs.length === 0) {
+            return '<div class="log-empty">暂无活动记录<br>系统启动后将自动记录</div>';
+        }
+
+        return logs.slice(0, 20).map(log => {
+            const config = AGENT_CONFIG[log.agent] || { emoji: '🤖' };
+            return `
+                <div class="log-item">
+                    <span class="log-agent-icon">${config.emoji}</span>
+                    <div class="log-content">
+                        <div class="log-message">${escapeHtml(log.message)}</div>
+                        <div class="log-time">${formatTime(log.time)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ========== 渲染快捷链接 ==========
+    function renderQuickLinks(links) {
+        const linkDefs = [
+            {
+                key: 'trend_doc',
+                icon: '📡',
+                title: 'AI动态追踪汇总',
+                desc: '所有AI社交方向的动态都在这里',
+            },
+            {
+                key: 'knowledge_doc',
+                icon: '🧠',
+                title: 'AI社交认知沉淀',
+                desc: '持续更新的产品方向认知框架',
+            },
+            {
+                key: 'ideas_folder',
+                icon: '💡',
+                title: '产品方案文件夹',
+                desc: '所有产品创意和评审报告',
+            },
+        ];
+
+        return linkDefs.map(def => {
+            const url = links[def.key] || '';
+            if (url) {
+                return `
+                    <a href="${url}" target="_blank" class="quick-link">
+                        <span class="link-icon">${def.icon}</span>
+                        <div class="link-info">
+                            <div class="link-title">${def.title}</div>
+                            <div class="link-desc">${def.desc}</div>
+                        </div>
+                        <span class="link-arrow">→</span>
+                    </a>
+                `;
+            } else {
+                return `
+                    <div class="quick-link disabled">
+                        <span class="link-icon">${def.icon}</span>
+                        <div class="link-info">
+                            <div class="link-title">${def.title}</div>
+                            <div class="link-desc">尚未配置（飞书文档ID未设置）</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+
+    // ========== 时间格式化 ==========
+    function formatTime(timeStr) {
+        if (!timeStr) return '';
+        try {
+            const date = new Date(timeStr.replace(' ', 'T'));
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) return '刚刚';
+            if (diffMins < 60) return `${diffMins}分钟前`;
+            if (diffMins < 1440) return `${Math.floor(diffMins / 60)}小时前`;
+
+            // 超过一天，显示具体时间
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hour = date.getHours().toString().padStart(2, '0');
+            const min = date.getMinutes().toString().padStart(2, '0');
+            return `${month}/${day} ${hour}:${min}`;
+        } catch(e) {
+            return timeStr;
+        }
+    }
+
+    // ========== HTML转义（防止XSS） ==========
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    // ========== 启动 ==========
+    // 首次加载
+    loadStatus();
+
+    // 每30秒自动刷新
+    setInterval(loadStatus, REFRESH_INTERVAL);
+</script>
+
+</body>
+</html>

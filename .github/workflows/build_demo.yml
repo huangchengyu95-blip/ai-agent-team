@@ -1,0 +1,87 @@
+# GitHub Actions 工作流：手动触发工程师Agent构建Demo
+# 使用方式：在GitHub仓库页面 → Actions → Build Demo → Run workflow
+# 需要输入飞书产品方案文档ID
+
+name: 工程师 - 构建产品Demo
+
+on:
+  # 只能手动触发（需要你输入产品文档ID）
+  workflow_dispatch:
+    inputs:
+      doc_id:
+        description: '飞书产品方案文档ID（在文档URL中找，如 docs.feishu.cn/docx/XXXXXX 中的XXXXXX）'
+        required: true
+        type: string
+      product_name:
+        description: '产品名称（可选，方便识别）'
+        required: false
+        type: string
+        default: '未命名产品'
+
+jobs:
+  build-demo:
+    runs-on: ubuntu-latest
+
+    # 需要写入权限来提交生成的Demo文件
+    permissions:
+      contents: write
+
+    steps:
+      # 第1步：下载代码
+      - name: 下载代码
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 第2步：安装Python
+      - name: 安装Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 第3步：安装依赖
+      - name: 安装Python依赖
+        run: pip install -r requirements.txt
+
+      # 第4步：运行工程师Agent
+      - name: 运行工程师Agent构建Demo
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          VOLCENGINE_API_KEY: ${{ secrets.VOLCENGINE_API_KEY }}
+          VOLCENGINE_MODEL_ID: ${{ secrets.VOLCENGINE_MODEL_ID }}
+        run: |
+          echo "🔧 开始构建产品：${{ github.event.inputs.product_name }}"
+          echo "📄 产品方案文档ID：${{ github.event.inputs.doc_id }}"
+          python agents/engineer.py --doc-id "${{ github.event.inputs.doc_id }}"
+
+      # 第5步：把生成的Demo提交到仓库
+      - name: 提交Demo文件
+        run: |
+          git config user.email "engineer@ai-team.bot"
+          git config user.name "AI Engineer Agent"
+          git add demos/
+          git add status.json
+          # 检查是否有新文件
+          if git diff --cached --quiet; then
+            echo "没有新的Demo文件生成"
+          else
+            git commit -m "feat: add demo for ${{ github.event.inputs.product_name }} [$(date '+%Y-%m-%d %H:%M')]"
+            git push
+            echo "✅ Demo文件已提交到仓库"
+          fi
+
+      # 第6步：提示如何查看Demo
+      - name: 显示Demo访问方式
+        run: |
+          echo ""
+          echo "🎉 Demo构建完成！"
+          echo ""
+          echo "查看Demo的方法："
+          echo "1. 进入GitHub仓库 → demos/ 目录"
+          echo "2. 找到最新的文件夹"
+          echo "3. 下载 index.html 文件"
+          echo "4. 双击文件用浏览器打开"
+          echo ""
+          echo "或者，如果开启了GitHub Pages，可以直接在线预览"
