@@ -90,9 +90,9 @@ class FeishuClient:
             if method.upper() == "GET":
                 resp = requests.get(url, headers=headers, params=params, timeout=15)
             elif method.upper() == "POST":
-                resp = requests.post(url, headers=headers, json=data, timeout=15)
+                resp = requests.post(url, headers=headers, json=data, params=params, timeout=15)
             elif method.upper() == "PATCH":
-                resp = requests.patch(url, headers=headers, json=data, timeout=15)
+                resp = requests.patch(url, headers=headers, json=data, params=params, timeout=15)
             else:
                 return {"code": -1, "msg": f"不支持的请求方法：{method}"}
 
