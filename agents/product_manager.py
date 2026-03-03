@@ -243,7 +243,10 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
         if knowledge_update and knowledge_doc_id:
             print("\n📝 更新认知沉淀文档...")
             feishu_client.append_to_document(knowledge_doc_id, knowledge_update)
-            doc_url = f"https://docs.feishu.cn/docx/{knowledge_doc_id}"
+            # 优先从config读取文档URL（含正确域名），若没有则自动构建
+            doc_url = config.get("feishu", {}).get("documents", {}).get("knowledge_doc_url", "")
+            if not doc_url:
+                doc_url = f"https://docs.feishu.cn/docx/{knowledge_doc_id}"
             update_feishu_links(knowledge_doc=doc_url)
         elif knowledge_update:
             print("\n📋 认知沉淀文档ID未配置，更新内容：")

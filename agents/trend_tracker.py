@@ -213,7 +213,10 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
             print(f"\n📝 正在写入飞书文档...")
             success = feishu_client.append_to_document(trend_doc_id, content_to_write)
             if success:
-                doc_url = f"https://docs.feishu.cn/docx/{trend_doc_id}"
+                # 优先从config读取文档URL（含正确域名），若没有则自动构建
+                doc_url = config.get("feishu", {}).get("documents", {}).get("trend_doc_url", "")
+                if not doc_url:
+                    doc_url = f"https://docs.feishu.cn/docx/{trend_doc_id}"
                 update_feishu_links(trend_doc=doc_url)
                 print(f"✅ 成功追加到飞书文档")
             else:

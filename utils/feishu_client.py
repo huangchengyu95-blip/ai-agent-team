@@ -31,10 +31,27 @@ class FeishuClient:
         self._access_token = None
         self._token_expires = 0
 
+        # 读取飞书文档域名（不同公司的飞书域名不同）
+        self.doc_domain = self._load_doc_domain()
+
         # 检查凭证是否配置
         if not self.app_id or not self.app_secret:
             print("⚠️  警告：未找到飞书应用凭证（FEISHU_APP_ID / FEISHU_APP_SECRET）")
             print("     飞书相关功能将不可用，请按README.md步骤配置")
+
+    def _load_doc_domain(self) -> str:
+        """
+        从config.json读取飞书文档域名
+        字节内部飞书域名是 bytedance.larkoffice.com
+        普通飞书用户是 docs.feishu.cn
+        """
+        try:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
+            with open(config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            return config.get("feishu", {}).get("feishu_doc_domain", "docs.feishu.cn")
+        except Exception:
+            return "docs.feishu.cn"
 
     def is_configured(self) -> bool:
         """检查飞书是否已配置"""
@@ -131,7 +148,7 @@ class FeishuClient:
         if result.get("code") == 0:
             doc = result.get("data", {}).get("document", {})
             doc_id = doc.get("document_id", "")
-            url = f"https://docs.feishu.cn/docx/{doc_id}"
+            url = f"https://{self.doc_domain}/docx/{doc_id}"
             print(f"✅ 文档创建成功：{title} -> {url}")
             # 自动将文档分享给用户，这样用户可以直接打开链接
             if self.user_open_id:
