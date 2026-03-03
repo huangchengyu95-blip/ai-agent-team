@@ -1,16 +1,16 @@
 {
   "_说明": "这个文件记录所有Agent的运行状态，由程序自动维护，不需要手动修改",
-  "last_updated": "2026-03-03T04:37:17.148170",
+  "last_updated": "2026-03-03T04:51:11.139848",
   "system_status": "running",
   "agents": {
     "trend_tracker": {
       "name": "AI动态追踪员",
       "status": "idle",
-      "last_run": "2026-03-03 04:37",
+      "last_run": "2026-03-03 04:51",
       "last_result": "干运行测试成功",
       "next_run": "",
       "runs_today": 0,
-      "total_runs": 1
+      "total_runs": 2
     },
     "product_manager": {
       "name": "产品经理",
@@ -38,6 +38,11 @@
     }
   },
   "activity_log": [
+    {
+      "time": "2026-03-03 04:51",
+      "agent": "trend_tracker",
+      "message": "干运行测试 - 状态更新正常"
+    },
     {
       "time": "2026-03-03 04:37",
       "agent": "trend_tracker",
