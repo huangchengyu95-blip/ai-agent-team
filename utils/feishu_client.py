@@ -392,6 +392,18 @@ class FeishuClient:
     # 文件夹操作
     # ============================================================
 
+    def _get_root_folder_token(self) -> str:
+        """
+        获取飞书云盘根目录的 folder_token
+        创建文件夹时必须提供父目录 token，根目录 token 需要通过这个接口获取
+        """
+        result = self._request("GET", "/drive/explorer/v2/root_folder/meta")
+        if result.get("code") == 0:
+            return result.get("data", {}).get("token", "")
+        else:
+            print(f"⚠️  获取根目录token失败：{result.get('msg')}")
+            return ""
+
     def create_folder(self, name: str, parent_token: str = "") -> str:
         """
         创建飞书云盘文件夹
@@ -405,18 +417,25 @@ class FeishuClient:
         if not self.is_configured():
             return ""
 
-        data = {"name": name}
-        if parent_token:
-            data["folder_token"] = parent_token
+        # 飞书 API 要求必须传 folder_token，空则先获取根目录 token
+        if not parent_token:
+            parent_token = self._get_root_folder_token()
+            if not parent_token:
+                print("❌ 无法获取根目录token，文件夹创建失败")
+                return ""
 
-        result = self._request("POST", "/drive/v1/files/create_folder", data=data)
+        result = self._request(
+            "POST",
+            "/drive/v1/files/create_folder",
+            data={"name": name, "folder_token": parent_token}
+        )
 
         if result.get("code") == 0:
             token = result.get("data", {}).get("token", "")
             print(f"✅ 文件夹创建成功：{name}")
             return token
         else:
-            print(f"❌ 文件夹创建失败：{result.get('msg')}")
+            print(f"❌ 文件夹创建失败（code={result.get('code')}）：{result.get('msg')}")
             return ""
 
 
