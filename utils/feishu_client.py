@@ -24,6 +24,8 @@ class FeishuClient:
         # 从环境变量读取应用凭证
         self.app_id = os.environ.get("FEISHU_APP_ID", "")
         self.app_secret = os.environ.get("FEISHU_APP_SECRET", "")
+        # 用户Open ID，用于自动将新建文档分享给用户
+        self.user_open_id = os.environ.get("FEISHU_USER_OPEN_ID", "")
 
         # 缓存访问令牌（有效期2小时）
         self._access_token = None
@@ -131,10 +133,38 @@ class FeishuClient:
             doc_id = doc.get("document_id", "")
             url = f"https://docs.feishu.cn/docx/{doc_id}"
             print(f"✅ 文档创建成功：{title} -> {url}")
+            # 自动将文档分享给用户，这样用户可以直接打开链接
+            if self.user_open_id:
+                self._share_document_with_user(doc_id)
             return {"document_id": doc_id, "url": url}
         else:
             print(f"❌ 创建文档失败：{result.get('msg')}")
             return None
+
+    def _share_document_with_user(self, document_id: str) -> bool:
+        """
+        自动将文档分享给配置的用户（可编辑权限）
+        在 create_document 后自动调用，确保用户能打开链接
+        """
+        if not self.user_open_id:
+            return False
+        result = self._request(
+            "POST",
+            f"/drive/v1/permissions/{document_id}/members",
+            data={
+                "member_type": "openid",
+                "member_id": self.user_open_id,
+                "perm": "edit",
+                "type": "user"
+            },
+            params={"type": "docx", "need_notification": "false"}
+        )
+        if result.get("code") == 0:
+            print(f"✅ 文档已自动分享给用户")
+            return True
+        else:
+            print(f"⚠️  文档分享失败（不影响主流程）：{result.get('msg')}")
+            return False
 
     def get_document_content(self, document_id: str) -> str:
         """
