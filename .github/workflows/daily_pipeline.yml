@@ -74,6 +74,10 @@ jobs:
           # 注意：飞书文档ID和用户Open ID已经写在config.json里，不需要在Secrets中配置
           FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
           FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          # OpenRouter（推荐，优先级高）
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL_ID: ${{ secrets.OPENROUTER_MODEL_ID }}
+          # 火山引擎（备用，OpenRouter未配置时使用）
           VOLCENGINE_API_KEY: ${{ secrets.VOLCENGINE_API_KEY }}
           VOLCENGINE_MODEL_ID: ${{ secrets.VOLCENGINE_MODEL_ID }}
         run: |

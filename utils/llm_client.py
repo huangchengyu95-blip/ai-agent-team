@@ -1,12 +1,16 @@
 """
-火山引擎LLM客户端
-- 使用火山引擎的豆包模型
-- 支持工具调用（让模型能搜索网络、抓取网页）
-- API格式与OpenAI兼容
+LLM客户端（支持 OpenRouter 和 火山引擎）
+- 优先使用 OpenRouter（设置 OPENROUTER_API_KEY 即可启用）
+- 备用：火山引擎豆包模型（VOLCENGINE_API_KEY）
+- 两者都是 OpenAI 兼容格式，工具调用方式相同
 
-使用前需要在环境变量中设置：
-- VOLCENGINE_API_KEY: 火山引擎API密钥（暂时留空，测试其他功能时不影响）
-- VOLCENGINE_MODEL_ID: 使用的模型ID（如 doubao-pro-32k）
+环境变量配置（GitHub Secrets）：
+  OpenRouter（推荐）：
+    OPENROUTER_API_KEY  = sk-or-v1-...
+    OPENROUTER_MODEL_ID = anthropic/claude-sonnet-4-5（或其他模型）
+  火山引擎（备用）：
+    VOLCENGINE_API_KEY  = ...
+    VOLCENGINE_MODEL_ID = doubao-pro-32k-240828
 """
 
 import os
@@ -61,20 +65,43 @@ AVAILABLE_TOOLS = [
 
 
 class LLMClient:
-    """火山引擎LLM客户端"""
+    """LLM客户端（OpenRouter 优先，火山引擎备用）"""
 
     def __init__(self):
-        self.api_key = os.environ.get("VOLCENGINE_API_KEY", "")
-        self.model_id = os.environ.get("VOLCENGINE_MODEL_ID", "doubao-pro-32k-240828")
-        self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
+        # 优先检测 OpenRouter
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+        volcengine_key = os.environ.get("VOLCENGINE_API_KEY", "")
+
+        if openrouter_key:
+            self.provider = "openrouter"
+            self.api_key = openrouter_key
+            self.model_id = os.environ.get(
+                "OPENROUTER_MODEL_ID",
+                "anthropic/claude-sonnet-4-5"  # 默认模型，可在 GitHub Secrets 里覆盖
+            )
+            self.base_url = "https://openrouter.ai/api/v1"
+            self.extra_headers = {
+                "X-Title": "AI Agent Team"  # OpenRouter 推荐带上来源说明
+            }
+            print(f"✅ LLM：使用 OpenRouter（模型：{self.model_id}）")
+        elif volcengine_key:
+            self.provider = "volcengine"
+            self.api_key = volcengine_key
+            self.model_id = os.environ.get("VOLCENGINE_MODEL_ID", "doubao-pro-32k-240828")
+            self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
+            self.extra_headers = {}
+            print(f"✅ LLM：使用 火山引擎（模型：{self.model_id}）")
+        else:
+            self.provider = "none"
+            self.api_key = ""
+            self.model_id = ""
+            self.base_url = ""
+            self.extra_headers = {}
+            print("⚠️  警告：未找到 LLM API Key")
+            print("     请在 GitHub Secrets 中配置 OPENROUTER_API_KEY 或 VOLCENGINE_API_KEY")
 
         self._client = None
-
-        # 检查配置
-        if not self.api_key:
-            print("⚠️  警告：未找到火山引擎API Key（VOLCENGINE_API_KEY）")
-            print("     LLM功能暂时不可用，等待配置")
-        else:
+        if self.api_key:
             self._init_client()
 
     def is_configured(self) -> bool:
@@ -88,7 +115,8 @@ class LLMClient:
         try:
             self._client = OpenAI(
                 api_key=self.api_key,
-                base_url=self.base_url
+                base_url=self.base_url,
+                default_headers=self.extra_headers
             )
         except Exception as e:
             print(f"❌ LLM客户端初始化失败：{e}")
