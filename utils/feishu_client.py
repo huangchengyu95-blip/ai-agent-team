@@ -112,6 +112,8 @@ class FeishuClient:
                 resp = requests.post(url, headers=headers, json=data, params=params, timeout=15)
             elif method.upper() == "PATCH":
                 resp = requests.patch(url, headers=headers, json=data, params=params, timeout=15)
+            elif method.upper() == "DELETE":
+                resp = requests.delete(url, headers=headers, json=data, params=params, timeout=15)
             else:
                 return {"code": -1, "msg": f"不支持的请求方法：{method}"}
 
@@ -274,13 +276,22 @@ class FeishuClient:
         if not self.is_configured():
             return False
 
-        # 获取所有块
-        blocks_result = self._request("GET", f"/docx/v1/documents/{document_id}/blocks")
-        if blocks_result.get("code") != 0:
-            print(f"❌ 获取文档块失败：{blocks_result.get('msg')}")
-            return False
+        # 获取所有块（API 有分页，需循环取完）
+        items = []
+        page_token = None
+        while True:
+            params = {"page_size": 500}
+            if page_token:
+                params["page_token"] = page_token
+            blocks_result = self._request("GET", f"/docx/v1/documents/{document_id}/blocks", params=params)
+            if blocks_result.get("code") != 0:
+                print(f"❌ 获取文档块失败：{blocks_result.get('msg')}")
+                return False
+            items.extend(blocks_result.get("data", {}).get("items", []))
+            if not blocks_result.get("data", {}).get("has_more"):
+                break
+            page_token = blocks_result.get("data", {}).get("page_token")
 
-        items = blocks_result.get("data", {}).get("items", [])
         if not items:
             print("❌ 文档块列表为空")
             return False
