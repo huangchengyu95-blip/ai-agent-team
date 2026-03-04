@@ -288,13 +288,15 @@ class FeishuClient:
     # 消息发送
     # ============================================================
 
-    def send_message_to_user(self, user_open_id: str, message: str) -> bool:
+    def send_message_to_user(self, user_open_id: str, message: str,
+                              receive_id_type: str = "open_id") -> bool:
         """
         发送飞书文字消息给指定用户
 
         参数：
-        - user_open_id: 用户的Open ID（在config.json里配置）
+        - user_open_id: 用户标识（open_id、email等，类型由 receive_id_type 指定）
         - message: 消息内容（纯文字）
+        - receive_id_type: ID类型，"open_id"（默认）或 "email"
 
         返回：是否发送成功
         """
@@ -303,7 +305,7 @@ class FeishuClient:
             return False
 
         if not user_open_id:
-            print("⚠️  未配置用户Open ID，无法发送消息")
+            print("⚠️  未配置用户标识，无法发送消息")
             return False
 
         result = self._request(
@@ -314,7 +316,7 @@ class FeishuClient:
                 "msg_type": "text",
                 "content": json.dumps({"text": message})
             },
-            params={"receive_id_type": "open_id"}
+            params={"receive_id_type": receive_id_type}
         )
 
         if result.get("code") == 0:
@@ -325,15 +327,16 @@ class FeishuClient:
             return False
 
     def send_rich_message(self, user_open_id: str, title: str, content: str,
-                          doc_url: str = "") -> bool:
+                          doc_url: str = "", receive_id_type: str = "open_id") -> bool:
         """
         发送飞书富文本消息（带标题和正文）
 
         参数：
-        - user_open_id: 用户Open ID
+        - user_open_id: 用户标识（open_id、email等，类型由 receive_id_type 指定）
         - title: 消息标题
         - content: 消息正文
         - doc_url: 相关文档链接（可选）
+        - receive_id_type: ID类型，"open_id"（默认）或 "email"
 
         返回：是否成功
         """
@@ -374,7 +377,7 @@ class FeishuClient:
                 "msg_type": "post",
                 "content": json.dumps(post_content)
             },
-            params={"receive_id_type": "open_id"}
+            params={"receive_id_type": receive_id_type}
         )
 
         if result.get("code") == 0:
@@ -386,7 +389,7 @@ class FeishuClient:
             plain = f"【{title}】\n\n{content}"
             if doc_url:
                 plain += f"\n\n查看详情：{doc_url}"
-            return self.send_message_to_user(user_open_id, plain)
+            return self.send_message_to_user(user_open_id, plain, receive_id_type)
 
     # ============================================================
     # 文件夹操作

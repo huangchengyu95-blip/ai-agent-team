@@ -62,8 +62,9 @@ def run_pipeline(dry_run: bool = False, only_agent: str = None):
     if dry_run:
         return _run_dry_run(feishu, config)
 
-    # 首次运行时自动创建产品方案文件夹（若尚未配置）
+    # 首次运行时自动创建核心文档和产品方案文件夹（若尚未配置）
     if feishu.is_configured():
+        _ensure_core_docs(feishu, config)
         _ensure_ideas_folder(feishu, config)
 
     # ============================================================
@@ -269,6 +270,51 @@ def _print_summary(results: dict, start_time: datetime):
         print(f"   {status} 评审员：{results['reviewer'].get('summary', '无摘要')}")
 
     print("="*60)
+
+
+def _ensure_core_docs(feishu: FeishuClient, config: dict):
+    """
+    确保两个核心文档存在且由本 App 创建（有写入权限）。
+    若 config.json 中 trend_doc_id / knowledge_doc_id 为空，则自动创建并保存。
+    注意：手动创建的文档 App 没有写入权限，必须用 App 自己创建才行。
+    """
+    from utils.status_tracker import update_feishu_links
+
+    docs = config.get("feishu", {}).get("documents", {})
+    doc_domain = config.get("feishu", {}).get("feishu_doc_domain", "docs.feishu.cn")
+    config_path = os.path.join(os.path.dirname(__file__), "config.json")
+
+    def _create_and_save(title: str, id_key: str, url_key: str, link_key: str):
+        """创建文档并把 ID/URL 写回 config.json"""
+        result = feishu.create_document(title)
+        if not result:
+            print(f"   ⚠️  {title} 创建失败")
+            return
+        doc_id = result["document_id"]
+        doc_url = result["url"]
+        print(f"   ✅ {title} 创建成功：{doc_url}")
+        # 写回 config.json
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            raw["feishu"]["documents"][id_key] = doc_id
+            raw["feishu"]["documents"][url_key] = doc_url
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(raw, f, ensure_ascii=False, indent=2)
+            config["feishu"]["documents"][id_key] = doc_id
+            config["feishu"]["documents"][url_key] = doc_url
+        except Exception as e:
+            print(f"   ⚠️  保存 config.json 失败：{e}")
+        # 更新看板链接
+        update_feishu_links(**{link_key: doc_url})
+
+    if not docs.get("trend_doc_id"):
+        print("\n📄 动态追踪文档尚未创建，正在自动创建（App身份）...")
+        _create_and_save("AI动态追踪汇总", "trend_doc_id", "trend_doc_url", "trend_doc")
+
+    if not docs.get("knowledge_doc_id"):
+        print("\n📄 认知沉淀文档尚未创建，正在自动创建（App身份）...")
+        _create_and_save("AI社交认知沉淀", "knowledge_doc_id", "knowledge_doc_url", "knowledge_doc")
 
 
 def _ensure_ideas_folder(feishu: FeishuClient, config: dict):

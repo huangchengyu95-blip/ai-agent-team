@@ -176,14 +176,14 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
                 feishu_client.append_to_document(idea_doc_id, separator + review_content)
                 print("✅ 评审报告已追加到产品文档")
 
-        # 发送飞书通知给用户
-        user_open_id = config.get("feishu", {}).get("user", {}).get("open_id", "")
+        # 发送飞书通知给用户（优先用邮箱，避免 open_id cross app 问题）
+        user_email = config.get("feishu", {}).get("user", {}).get("email", "")
         recommend_build = result.get("recommend_build", rating >= 3)
 
-        if user_open_id or True:  # 不管有没有配置都尝试发（没配置会打印到控制台）
+        if user_email or True:  # 不管有没有配置都尝试发（没配置会打印到控制台）
             _send_review_notification(
                 feishu_client=feishu_client,
-                user_open_id=user_open_id,
+                user_open_id=user_email,
                 idea_title=idea_title,
                 rating=rating,
                 rating_text=rating_text,
@@ -220,7 +220,7 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
 def _send_review_notification(feishu_client, user_open_id, idea_title, rating,
                                rating_text, highlights, risks, suggestion,
                                doc_url, recommend_build):
-    """发送飞书通知消息给用户"""
+    """发送飞书通知消息给用户（使用邮箱发送，避免 open_id cross app 问题）"""
     rating_stars = "⭐" * rating
 
     # 构建通知消息内容
@@ -250,11 +250,13 @@ def _send_review_notification(feishu_client, user_open_id, idea_title, rating,
 
     content = "\n".join(lines)
 
+    # receive_id_type 使用 email（邮箱在所有 App 下通用，不受 cross app 限制）
     feishu_client.send_rich_message(
         user_open_id=user_open_id,
         title=f"【产品评审通知】《{idea_title}》",
         content=content,
-        doc_url=doc_url
+        doc_url=doc_url,
+        receive_id_type="email"
     )
 
 
