@@ -1,57 +1,61 @@
 {
   "_说明": "这个文件存放飞书文档的ID等配置信息（不是密钥，可以公开）",
   "_setup_guide": "飞书文档和用户Open ID已由系统自动配置，只需完成GitHub配置即可",
-
   "feishu": {
     "_说明": "飞书相关配置",
-
     "feishu_doc_domain": "bytedance.larkoffice.com",
     "_feishu_doc_domain说明": "飞书文档的访问域名。字节内部飞书是bytedance.larkoffice.com，普通飞书用户是docs.feishu.cn",
-
     "documents": {
       "_说明": "核心文档ID由流水线首次运行时自动创建并写入，无需手动填写",
-      "trend_doc_id": "",
-      "trend_doc_url": "",
-      "knowledge_doc_id": "",
-      "knowledge_doc_url": "",
+      "trend_doc_id": "HCgPdSf7PoexpKxGI74cq2NcnTh",
+      "trend_doc_url": "https://bytedance.larkoffice.com/docx/HCgPdSf7PoexpKxGI74cq2NcnTh",
+      "knowledge_doc_id": "CUtyd2L2SozH0CxmYfEcbIxEnHa",
+      "knowledge_doc_url": "https://bytedance.larkoffice.com/docx/CUtyd2L2SozH0CxmYfEcbIxEnHa",
       "ideas_folder_token": ""
     },
-
     "user": {
       "_说明": "接收通知的用户Open ID（huangchengyu@bytedance.com）",
       "open_id": "ou_6ca6e7a1f6d0a871fbad36c4750271a5",
       "email": "huangchengyu@bytedance.com"
     }
   },
-
   "agent_settings": {
     "_说明": "各Agent的运行参数设置",
-
     "trend_tracker": {
       "max_search_results": 10,
       "search_hours_back": 6,
       "keywords": [
-        "AI social", "AI companion", "AI friend", "conversational AI",
-        "AI chat app", "social AI", "character AI", "AI relationship",
-        "AI dating", "replika", "AI社交", "AI伴侣", "AI聊天"
+        "AI social",
+        "AI companion",
+        "AI friend",
+        "conversational AI",
+        "AI chat app",
+        "social AI",
+        "character AI",
+        "AI relationship",
+        "AI dating",
+        "replika",
+        "AI社交",
+        "AI伴侣",
+        "AI聊天"
       ],
       "sources": [
-        "site:openai.com", "site:anthropic.com", "site:producthunt.com",
-        "site:reddit.com/r/ChatGPT", "site:reddit.com/r/artificial",
+        "site:openai.com",
+        "site:anthropic.com",
+        "site:producthunt.com",
+        "site:reddit.com/r/ChatGPT",
+        "site:reddit.com/r/artificial",
         "site:news.ycombinator.com"
       ]
     },
-
     "product_manager": {
       "max_research_searches": 5,
       "min_idea_confidence": 7
     },
-
     "product_reviewer": {
       "rating_threshold_for_notification": 3
     }
   },
-
   "github": {
     "_说明": "GitHub Pages相关配置，看板访问URL",
     "pages_url": ""
