@@ -157,6 +157,37 @@ def increment_stat(stat_key: str):
     _save_status(data)
 
 
+def add_idea_to_history(title: str, summary: str = ""):
+    """
+    把一个产品创意标题永久记录到 ideas_history 列表中（不受50条日志限制）
+    在 product_reviewer 完成评审后调用，保证历史创意标题不丢失
+
+    参数：
+    - title: 产品创意标题
+    - summary: 一句话描述（可选）
+    """
+    data = _load_status()
+
+    if "ideas_history" not in data:
+        data["ideas_history"] = []
+
+    # 避免重复记录同名创意
+    existing_titles = [item.get("title", "") for item in data["ideas_history"]]
+    if title not in existing_titles:
+        data["ideas_history"].append({
+            "title": title,
+            "summary": summary,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+        _save_status(data)
+
+
+def get_ideas_history() -> list:
+    """返回所有历史产品创意标题列表（永久保存，不被50条日志截断）"""
+    data = _load_status()
+    return data.get("ideas_history", [])
+
+
 def get_status() -> dict:
     """读取并返回当前的完整状态数据"""
     return _load_status()

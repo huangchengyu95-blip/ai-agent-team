@@ -292,6 +292,15 @@
       "message": "完成评审《VoiceMate - 低延迟语音AI陪伴社交Agent》，评级⭐⭐⭐⭐，已通知用户决策"
     }
   ],
+  "ideas_history": [
+    {"title": "「轻伴」分级定价AI语音伴侣", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-04 07:49"},
+    {"title": "秒伴 - 9.9元/月的低延迟AI语音陪伴产品", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-04 07:30"},
+    {"title": "AgentMate：专属AI社交代理人平台", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-04 05:09"},
+    {"title": "轻伴 - 普惠级低延迟语音AI伴侣", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-04 01:24"},
+    {"title": "「轻语」低延迟自然语音AI伴侣", "summary": "完成评审，评级⭐⭐⭐", "time": "2026-03-03 20:29"},
+    {"title": "声伴 - 400ms延迟的专属AI语音伴侣", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-03 16:42"},
+    {"title": "VoiceMate - 低延迟语音AI陪伴社交Agent", "summary": "完成评审，评级⭐⭐⭐⭐", "time": "2026-03-03 12:43"}
+  ],
   "feishu_links": {
     "trend_doc": "https://bytedance.larkoffice.com/docx/CKKQdFAOgobTGIxSPWGcHwvOnEt",
     "knowledge_doc": "https://bytedance.larkoffice.com/docx/V8DldnK7eoOWyVxTazTcNBMznxc",

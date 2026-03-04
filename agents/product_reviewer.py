@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from utils.llm_client import LLMClient
 from utils.feishu_client import FeishuClient
-from utils.status_tracker import update_agent_status, log_activity
+from utils.status_tracker import update_agent_status, log_activity, add_idea_to_history
 
 
 # ============================================================
@@ -193,6 +193,12 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
                 doc_url=idea_doc_url,
                 recommend_build=recommend_build
             )
+
+        # 永久保存创意标题到 ideas_history（不受50条日志限制）
+        add_idea_to_history(
+            title=idea_title,
+            summary=result.get("summary", "")
+        )
 
         update_agent_status(
             "product_reviewer", "waiting",

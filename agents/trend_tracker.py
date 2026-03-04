@@ -139,6 +139,15 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
         # 获取飞书文档ID
         trend_doc_id = config.get("feishu", {}).get("documents", {}).get("trend_doc_id", "")
 
+        # 读取飞书文档中已有的动态内容（末尾3000字），用于去重
+        recent_trend_content = ""
+        if trend_doc_id:
+            print("\n📖 读取已有动态文档（用于去重）...")
+            existing = feishu_client.get_document_content(trend_doc_id)
+            if existing:
+                recent_trend_content = existing[-3000:]  # 只取末尾，避免上下文过长
+                print(f"   已读取最近内容（{len(recent_trend_content)}字）")
+
         # 预先读取所有信息源（直接拉取，不消耗LLM工具调用次数）
         now = datetime.now()
 
@@ -173,6 +182,15 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
 {reddit_content}
 
 ==============================
+【飞书文档中已记录的最近动态（请严格去重！）】
+==============================
+{recent_trend_content if recent_trend_content else "（暂无历史记录）"}
+
+⚠️ 去重说明：上方"已记录的最近动态"是我们文档里最近保存的内容。
+如果某条信息（产品发布、研究报告、用户讨论等）在上面已经出现过，请跳过，不要再次记录。
+只记录那些在历史记录里完全没有提到的新内容。
+
+==============================
 【你的工作任务】
 ==============================
 
@@ -184,7 +202,7 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
 2. "Character AI Replika 2025 update" — 头部AI社交产品的最新动态
 3. 对上面任何引发兴趣的话题，用 web_fetch 深入阅读原文
 
-请综合以上全部内容，筛选出对AI社交产品经理有价值的信息，按JSON格式输出。
+请综合以上全部内容，筛选出对AI社交产品经理有价值的**新**信息（排除已记录的内容），按JSON格式输出。
 """
 
         # 运行Agent
