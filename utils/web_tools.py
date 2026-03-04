@@ -39,7 +39,7 @@ def web_search(query: str, max_results: int = 8) -> str:
             results = list(ddgs.text(
                 query,
                 max_results=max_results,
-                timelimit='w'  # 只搜索最近一周的内容，保证信息新鲜
+                timelimit='d'  # 只搜索最近24小时，每4小时运行一次，确保信息不重复
             ))
 
         if not results:
