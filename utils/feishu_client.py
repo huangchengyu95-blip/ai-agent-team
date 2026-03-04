@@ -256,6 +256,58 @@ class FeishuClient:
             print(f"❌ 文档追加失败：{result.get('msg')}")
             return False
 
+    def replace_document_content(self, document_id: str, content: str) -> bool:
+        """
+        用新内容替换飞书文档的全部正文（保留文档标题）
+
+        步骤：
+        1. 获取文档所有块
+        2. 批量删除全部正文块（标题块除外）
+        3. 追加新内容
+
+        参数：
+        - document_id: 文档ID
+        - content: 新的完整正文（Markdown格式）
+
+        返回：是否成功
+        """
+        if not self.is_configured():
+            return False
+
+        # 获取所有块
+        blocks_result = self._request("GET", f"/docx/v1/documents/{document_id}/blocks")
+        if blocks_result.get("code") != 0:
+            print(f"❌ 获取文档块失败：{blocks_result.get('msg')}")
+            return False
+
+        items = blocks_result.get("data", {}).get("items", [])
+        if not items:
+            print("❌ 文档块列表为空")
+            return False
+
+        # 第一个块是根块（page块），其直接子块是正文内容
+        root_block_id = items[0].get("block_id", "")
+        if not root_block_id:
+            return False
+
+        # 统计根块的直接子块数量（这些就是正文块）
+        child_count = sum(1 for item in items[1:] if item.get("parent_id") == root_block_id)
+
+        # 如果有正文块，批量删除
+        if child_count > 0:
+            delete_result = self._request(
+                "DELETE",
+                f"/docx/v1/documents/{document_id}/blocks/{root_block_id}/children/batch_delete",
+                data={"start_index": 0, "end_index": child_count}
+            )
+            if delete_result.get("code") != 0:
+                print(f"❌ 清空旧内容失败：{delete_result.get('msg')}")
+                return False
+            print(f"   已清空旧内容（{child_count}个块）")
+
+        # 追加新内容
+        return self.append_to_document(document_id, content)
+
     def update_document_title(self, document_id: str, title: str) -> bool:
         """更新文档标题"""
         if not self.is_configured():
