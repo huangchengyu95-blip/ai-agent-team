@@ -7,11 +7,11 @@
     "_feishu_doc_domain说明": "飞书文档的访问域名。字节内部飞书是bytedance.larkoffice.com，普通飞书用户是docs.feishu.cn",
     "documents": {
       "_说明": "核心文档ID由流水线首次运行时自动创建并写入，无需手动填写",
-      "trend_doc_id": "LHeqdTK9roJlVGxuEMmcttACnEe",
-      "trend_doc_url": "https://bytedance.larkoffice.com/docx/LHeqdTK9roJlVGxuEMmcttACnEe",
-      "knowledge_doc_id": "Co29dFLM7oLe6MxM0LQcRscdnIg",
-      "knowledge_doc_url": "https://bytedance.larkoffice.com/docx/Co29dFLM7oLe6MxM0LQcRscdnIg",
-      "ideas_folder_token": "HejFfbIWhlBK5Td2VAJcxLLengb"
+      "trend_doc_id": "",
+      "trend_doc_url": "",
+      "knowledge_doc_id": "",
+      "knowledge_doc_url": "",
+      "ideas_folder_token": ""
     },
     "user": {
       "_说明": "接收通知的用户Open ID（huangchengyu@bytedance.com）",
