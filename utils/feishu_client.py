@@ -220,8 +220,9 @@ class FeishuClient:
             print(f"--- 要追加的内容 ---\n{content}\n---")
             return False
 
-        # 第一步：获取文档的根块ID
-        blocks_result = self._request("GET", f"/docx/v1/documents/{document_id}/blocks")
+        # 第一步：获取文档的根块ID和当前子块数量
+        blocks_result = self._request("GET", f"/docx/v1/documents/{document_id}/blocks",
+                                      params={"page_size": 500})
         if blocks_result.get("code") != 0:
             print(f"❌ 获取文档结构失败：{blocks_result.get('msg')}")
             return False
@@ -237,6 +238,9 @@ class FeishuClient:
             print("❌ 无法获取根块ID")
             return False
 
+        # 计算当前子块数量（飞书API要求传实际index，不支持-1）
+        child_count = sum(1 for item in items[1:] if item.get("parent_id") == root_block_id)
+
         # 第二步：把Markdown内容转换成飞书文档块格式
         blocks = _markdown_to_blocks(content)
 
@@ -244,19 +248,24 @@ class FeishuClient:
             print("⚠️  没有可追加的内容块")
             return False
 
-        # 第三步：追加到文档末尾（index=-1表示追加到末尾）
-        result = self._request(
-            "POST",
-            f"/docx/v1/documents/{document_id}/blocks/{root_block_id}/children",
-            data={"children": blocks, "index": -1}
-        )
+        # 第三步：分批追加（飞书API单次最多50个块）
+        BATCH_SIZE = 50
+        current_index = child_count
+        for i in range(0, len(blocks), BATCH_SIZE):
+            batch = blocks[i:i + BATCH_SIZE]
+            result = self._request(
+                "POST",
+                f"/docx/v1/documents/{document_id}/blocks/{root_block_id}/children",
+                data={"children": batch, "index": current_index}
+            )
+            if result.get("code") == 0:
+                current_index += len(batch)
+            else:
+                print(f"❌ 文档追加失败：{result.get('msg')}")
+                return False
 
-        if result.get("code") == 0:
-            print(f"✅ 文档追加成功（{len(blocks)}个内容块）")
-            return True
-        else:
-            print(f"❌ 文档追加失败：{result.get('msg')}")
-            return False
+        print(f"✅ 文档追加成功（{len(blocks)}个内容块）")
+        return True
 
     def replace_document_content(self, document_id: str, content: str) -> bool:
         """
