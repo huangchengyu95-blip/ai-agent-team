@@ -303,12 +303,19 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
         knowledge_update = result.get("knowledge_update", "")
         if knowledge_update and knowledge_doc_id:
             print("\n📝 更新认知沉淀文档（整合重写）...")
-            feishu_client.replace_document_content(knowledge_doc_id, knowledge_update)
-            # 优先从config读取文档URL（含正确域名），若没有则自动构建
-            doc_url = config.get("feishu", {}).get("documents", {}).get("knowledge_doc_url", "")
-            if not doc_url:
-                doc_url = f"https://docs.feishu.cn/docx/{knowledge_doc_id}"
-            update_feishu_links(knowledge_doc=doc_url)
+            write_success = feishu_client.replace_document_content(knowledge_doc_id, knowledge_update)
+            if write_success:
+                # 优先从config读取文档URL（含正确域名），若没有则自动构建
+                doc_url = config.get("feishu", {}).get("documents", {}).get("knowledge_doc_url", "")
+                if not doc_url:
+                    doc_url = f"https://docs.feishu.cn/docx/{knowledge_doc_id}"
+                update_feishu_links(knowledge_doc=doc_url)
+            else:
+                # 飞书写入失败：打印内容到日志，并返回失败标志（会让pipeline报红）
+                print("❌ 认知沉淀文档写入失败！内容如下（可手动复制）：")
+                print(knowledge_update[:1000])
+                update_agent_status("product_manager", "idle", "⚠️ 飞书写入失败")
+                return {"success": False, "summary": "飞书文档写入失败", "has_product_idea": False}
         elif knowledge_update:
             print("\n📋 认知沉淀文档ID未配置，更新内容：")
             print(knowledge_update[:500])

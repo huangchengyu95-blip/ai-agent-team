@@ -229,8 +229,8 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
 
         if content_to_write and trend_doc_id:
             print(f"\n📝 正在写入飞书文档...")
-            success = feishu_client.append_to_document(trend_doc_id, content_to_write)
-            if success:
+            write_success = feishu_client.append_to_document(trend_doc_id, content_to_write)
+            if write_success:
                 # 优先从config读取文档URL（含正确域名），若没有则自动构建
                 doc_url = config.get("feishu", {}).get("documents", {}).get("trend_doc_url", "")
                 if not doc_url:
@@ -238,7 +238,11 @@ def run(feishu_client: FeishuClient = None, llm_client: LLMClient = None,
                 update_feishu_links(trend_doc=doc_url)
                 print(f"✅ 成功追加到飞书文档")
             else:
-                print("⚠️  飞书写入失败，内容已打印到控制台")
+                # 飞书写入失败：打印内容到日志，并返回失败标志（会让pipeline报红）
+                print("❌ 飞书文档写入失败！内容如下（可手动复制）：")
+                print(content_to_write[:1000])
+                update_agent_status("trend_tracker", "idle", f"⚠️ 飞书写入失败：{summary}")
+                return {"success": False, "summary": f"飞书写入失败：{summary}", "has_updates": True}
         elif content_to_write:
             print("\n📋 飞书文档ID未配置，动态内容：")
             print(content_to_write[:500] + "..." if len(content_to_write) > 500 else content_to_write)

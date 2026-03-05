@@ -150,6 +150,14 @@ def run_pipeline(dry_run: bool = False, only_agent: str = None):
     # 推送status.json（GitHub Actions会自动提交这个文件）
     _commit_status_update()
 
+    # 检查关键步骤是否成功——失败时以非零退出码结束
+    # 这会让 GitHub Actions 标红，并自动给仓库Owner发邮件通知
+    trend_ok = results.get("trend") is None or results["trend"].get("success", True)
+    pm_ok = results.get("pm") is None or results["pm"].get("success", True)
+    if not trend_ok or not pm_ok:
+        print("\n❌ 关键步骤失败，请查看上方日志（GitHub Actions 将标记本次运行为失败）")
+        sys.exit(1)
+
     return results
 
 
