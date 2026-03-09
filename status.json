@@ -1,25 +1,25 @@
 {
   "_说明": "这个文件记录所有Agent的运行状态，由程序自动维护，不需要手动修改",
-  "last_updated": "2026-03-09T08:36:23.196726",
+  "last_updated": "2026-03-09T12:43:04.991138",
   "system_status": "running",
   "agents": {
     "trend_tracker": {
       "name": "AI动态追踪员",
       "status": "idle",
-      "last_run": "2026-03-09 08:36",
-      "last_result": "⚠️ 飞书写入失败：发现3条AI社交相关动态：涉及AI心理依赖风险警示、异步语音社交模式探索，以及多模态推理模型对陪伴体验的潜在升级。",
+      "last_run": "2026-03-09 12:42",
+      "last_result": "⚠️ 飞书写入失败：重点关注AI社交产品带来的心理依赖风险，以及Agent能力驱动的社交产品从“对话”向“协作”转型的趋势。",
       "next_run": "",
       "runs_today": 0,
-      "total_runs": 52
+      "total_runs": 53
     },
     "product_manager": {
       "name": "产品经理",
       "status": "idle",
-      "last_run": "2026-03-09 08:36",
+      "last_run": "2026-03-09 12:43",
       "last_result": "⚠️ 飞书写入失败",
       "pending_ideas": 1,
       "total_ideas": 0,
-      "total_runs": 48,
+      "total_runs": 49,
       "latest_idea_title": "BridgeAgent - 社交意图伴侣"
     },
     "product_reviewer": {
@@ -41,6 +41,16 @@
     }
   },
   "activity_log": [
+    {
+      "time": "2026-03-09 12:42",
+      "agent": "product_manager",
+      "message": "开始研究AI社交方向，更新认知沉淀"
+    },
+    {
+      "time": "2026-03-09 12:42",
+      "agent": "trend_tracker",
+      "message": "开始搜索AI社交方向最新动态"
+    },
     {
       "time": "2026-03-09 08:36",
       "agent": "product_manager",
@@ -280,16 +290,6 @@
       "time": "2026-03-05 12:41",
       "agent": "product_manager",
       "message": "开始研究AI社交方向，更新认知沉淀"
-    },
-    {
-      "time": "2026-03-05 12:41",
-      "agent": "trend_tracker",
-      "message": "开始搜索AI社交方向最新动态"
-    },
-    {
-      "time": "2026-03-05 08:32",
-      "agent": "product_reviewer",
-      "message": "完成评审《BridgeAgent - 社交意图伴侣》，评级⭐⭐⭐，已通知用户决策"
     }
   ],
   "ideas_history": [
@@ -370,7 +370,7 @@
     "ideas_folder": "https://bytedance.larkoffice.com/drive/folder/Ao5JfJljuleCgld7q3VcNhuln0K"
   },
   "stats": {
-    "total_pipeline_runs": 48,
+    "total_pipeline_runs": 49,
     "total_ideas_generated": 18,
     "total_demos_built": 0
   }
