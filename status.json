@@ -1,25 +1,25 @@
 {
   "_说明": "这个文件记录所有Agent的运行状态，由程序自动维护，不需要手动修改",
-  "last_updated": "2026-03-10T16:50:53.652502",
+  "last_updated": "2026-03-10T20:26:06.542993",
   "system_status": "running",
   "agents": {
     "trend_tracker": {
       "name": "AI动态追踪员",
       "status": "idle",
-      "last_run": "2026-03-10 16:50",
-      "last_result": "⚠️ 飞书写入失败：新增3条动态：关注AI伴侣的心理伦理风险、年龄验证的隐私合规挑战，以及多模态嵌入模型对个性化记忆的提升作用。",
+      "last_run": "2026-03-10 20:25",
+      "last_result": "⚠️ 飞书写入失败：关注AI交互心理学风险、安全性增强技术以及AI从聊天向嵌入式工作流演进的趋势。",
       "next_run": "",
       "runs_today": 0,
-      "total_runs": 60
+      "total_runs": 61
     },
     "product_manager": {
       "name": "产品经理",
       "status": "idle",
-      "last_run": "2026-03-10 16:50",
+      "last_run": "2026-03-10 20:26",
       "last_result": "⚠️ 飞书写入失败",
       "pending_ideas": 1,
       "total_ideas": 0,
-      "total_runs": 56,
+      "total_runs": 57,
       "latest_idea_title": "BridgeAgent - 社交意图伴侣"
     },
     "product_reviewer": {
@@ -41,6 +41,16 @@
     }
   },
   "activity_log": [
+    {
+      "time": "2026-03-10 20:25",
+      "agent": "product_manager",
+      "message": "开始研究AI社交方向，更新认知沉淀"
+    },
+    {
+      "time": "2026-03-10 20:25",
+      "agent": "trend_tracker",
+      "message": "开始搜索AI社交方向最新动态"
+    },
     {
       "time": "2026-03-10 16:50",
       "agent": "product_manager",
@@ -280,16 +290,6 @@
       "time": "2026-03-06 20:23",
       "agent": "trend_tracker",
       "message": "开始搜索AI社交方向最新动态"
-    },
-    {
-      "time": "2026-03-06 16:31",
-      "agent": "product_manager",
-      "message": "开始研究AI社交方向，更新认知沉淀"
-    },
-    {
-      "time": "2026-03-06 16:31",
-      "agent": "trend_tracker",
-      "message": "开始搜索AI社交方向最新动态"
     }
   ],
   "ideas_history": [
@@ -370,7 +370,7 @@
     "ideas_folder": "https://bytedance.larkoffice.com/drive/folder/Ao5JfJljuleCgld7q3VcNhuln0K"
   },
   "stats": {
-    "total_pipeline_runs": 56,
+    "total_pipeline_runs": 57,
     "total_ideas_generated": 18,
     "total_demos_built": 0
   }
